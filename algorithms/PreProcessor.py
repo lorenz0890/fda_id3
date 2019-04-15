@@ -5,7 +5,7 @@ import copy as cp
 
 '''
 7. Attribute Information:
-   1. Class Name: 2 (democrat, republican)
+   1. Class Name: 2 (democrat, republican) #policy 0
    2. handicapped-infants: 2 (y,n)
    3. water-project-cost-sharing: 2 (y,n)
    4. adoption-of-the-budget-resolution: 2 (y,n)
@@ -40,7 +40,7 @@ def clean_data(data):
     # uniform distributed varaible y or n replaces ?
     # we use deep copy because we avoid side effects in (somehow) functional language. costs some peformance and memory though.
 
-    cleaned_data = cp.deepcopy(data)
+    cleaned_data = cp.deepcopy(data)#[:,1:]
     for ind_row, _ in enumerate(cleaned_data):
         for ind_col, _ in enumerate(cleaned_data[ind_row]):
             if cleaned_data[ind_row][ind_col] == '?' and ind_col > 0:
