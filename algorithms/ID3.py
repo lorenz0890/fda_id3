@@ -85,10 +85,8 @@ def learning_curve(d, n, training_set, test_set, num_increments):
 
         training_set_parts_lengths.append(len(training_set_partial))
 
-
-
-    print("Training Error: " + str(training_error_mean))
-    print("Test Error: " + str(test_error_mean))
+    #print("Training Error: " + str(training_error_mean))
+    #print("Test Error: " + str(test_error_mean))
 
     plt.figure(figsize=(10, 10))
     plt.plot(training_set_parts_lengths, training_errors, label = 'training')
