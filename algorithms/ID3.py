@@ -1,17 +1,16 @@
 import numpy as np
-import algorithms.PreProcessor as prep
 from matplotlib import pyplot
 import copy as cp
 
 def ID3(d, n, data):
-    print('recursion depth: ' + str(n))
+    #print('recursion depth: ' + str(n))
     #check termination criteria
     if (check_common_label(data) == 'republican'):
-        return "leaf republican"
+        return "republican"
     if (check_common_label(data) == 'democrat'):
-        return "leaf democrat"
+        return "democrat"
     if len(d) == 0 or n == 0:
-        return "leaf " + find_majority_label(data)
+        return find_majority_label(data)
 
     #find feature with biggest gain
     max_gain = -1 #initialized iwth -1 because real gain is always > 0
@@ -25,8 +24,8 @@ def ID3(d, n, data):
     #split the dataset along the max gain feature -> migrate to method
     remove_yes = []
     remove_no = []
-    data_yes = cp.deepcopy(data)
     data_no = cp.deepcopy(data)
+    data_yes = cp.deepcopy(data)
     for row_ind,_ in enumerate(data):
         if data[row_ind][max_gain_feature] == 'y':
             remove_yes.append(row_ind)
@@ -34,17 +33,17 @@ def ID3(d, n, data):
         if data[row_ind][max_gain_feature] == 'n':
             remove_no.append(row_ind)
 
-    data_yes = np.delete(data_yes, remove_yes, axis=0)
-    data_no = np.delete(data_no, remove_no, axis=0)
+    data_no = np.delete(data_no, remove_yes, axis=0)
+    data_yes = np.delete(data_yes, remove_no, axis=0)
 
     #remove the max gain feature from the featzure set
     d_new = np.delete(d, np.where(d==max_gain_feature))
 
     #generate a node
     node = {}
-    node ['policy'+str(max_gain_feature)] = {}
-    node['policy'+str(max_gain_feature)]['yes']=(ID3(d_new , n-1, data_yes))
-    node['policy'+str(max_gain_feature)]['no']=(ID3(d_new, n-1, data_no))
+    node [max_gain_feature] = {}
+    node[max_gain_feature]['n']=(ID3(d_new , n-1, data_no))
+    node[max_gain_feature]['y']=(ID3(d_new, n-1, data_yes))
     return node
 
 def compute_gain(S, i):
@@ -57,17 +56,51 @@ def split_data(data, split):
     #shuffel array first to guarantee random split
     shuffeled_data = np.random.permutation(data)
     split_data = np.split(shuffeled_data, [int(len(shuffeled_data)*split)], axis = 0)
-
     return split_data[1], split_data[0] #trainig_set, test_set
 
-def learning_curve(d, n, training_set, test_set):
+def learning_curve(d, n, training_set, test_set, num_increments):
     # you will probably need additional helper functions
+    training_set_parts = np.split(training_set, num_increments, axis=0)
+    training_error = 0.0
+    test_error = 0.0
+    for training_set_partial in training_set_parts:
+        decision_tree = ID3(d, n, training_set_partial)
+        #print(decision_tree)
+        training_error += compute_error(decision_tree, training_set_partial, d)
+        training_error = training_error/len(training_set)
+
+        test_error += compute_error(decision_tree, test_set, d)
+        test_error = test_error/len(test_set)
+
+    print("Training Error: " + str(training_error))
+    print("Test Error: " + str(test_error))
+
     #return plot
     pass
 
 
-
 #Helper funcs:
+def compute_error(decision_tree, data_set, d):
+    err = 0.0
+    for row_ind, row in enumerate(data_set):
+        true = row[0]
+        found = traverse_tree(decision_tree, row, d)
+        if found != true : err+=1
+    return err
+
+
+def traverse_tree(decision_tree, evaluation_row, d):
+    for col_ind, col in enumerate(evaluation_row):
+        if col_ind > 0 and np.isin(col_ind, d):
+            try:
+                decision_sub_tree = decision_tree[col_ind][col]
+                if type(decision_sub_tree) == type(""):
+                    return decision_sub_tree
+                else:
+                    return traverse_tree(decision_sub_tree, evaluation_row, np.delete(d, np.where(d==col_ind)))
+            except KeyError:
+                continue
+
 def find_majority_label(data):
     rep_count = 0
     dem_count = 0

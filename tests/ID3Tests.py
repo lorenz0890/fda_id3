@@ -42,7 +42,6 @@ class IDTests(unittest.TestCase):
     def test_compute_conditional_entropy(self):
         training_set, _ = id3.split_data(prep.clean_data(prep.load_data('../data/house-votes-84.data')), 0.2)
         entropy_training = id3.compute_conditional_entropy(training_set, 1)
-        print(entropy_training)
         assert entropy_training > 0
 
     def test_compute_gain(self):
@@ -85,6 +84,10 @@ class IDTests(unittest.TestCase):
 
     def test_ID3(self):
         training_set, test_set = id3.split_data(prep.clean_data(prep.load_data('../data/house-votes-84.data')), 0.2)
-        decision_tree = id3.ID3(np.arange(17),50,training_set) # max num policies is 16
-        print(decision_tree)
+        decision_tree = id3.ID3(np.arange(1,17),2,training_set) # max num policies is 16
+        print(decision_tree) # requires optical evaluation
+
+    def test_learning_curve(self):
+        training_set, test_set = id3.split_data(prep.clean_data(prep.load_data('../data/house-votes-84.data')), 0.3)
+        id3.learning_curve(np.arange(1,16),5, training_set, test_set, 5)
 
