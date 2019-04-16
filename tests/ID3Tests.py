@@ -88,6 +88,6 @@ class IDTests(unittest.TestCase):
         print(decision_tree) # requires optical evaluation
 
     def test_learning_curve(self):
-        training_set, test_set = id3.split_data(prep.clean_data(prep.load_data('../data/house-votes-84.data')), 0.3)
-        id3.learning_curve(np.arange(1,16),5, training_set, test_set, 5)
+        training_set, test_set = id3.split_data(prep.clean_data(prep.load_data('../data/house-votes-84.data')), 0.3) #30% test set will create training set with  305 rows.
+        id3.learning_curve(np.arange(1,8),50, training_set, test_set, 100)
 

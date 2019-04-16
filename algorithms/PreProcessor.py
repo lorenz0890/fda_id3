@@ -30,8 +30,8 @@ def load_data(filename):
     filename, ftype = os.path.splitext(filename)
     raw_data = None
     if ftype == '.data':
-        raw_data = np.genfromtxt((filename+ftype), delimiter=',', dtype=str,
-                                      usecols=(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16))
+        raw_data = np.genfromtxt((filename+ftype), delimiter=',', dtype=str
+                                      )
     return raw_data
 
 

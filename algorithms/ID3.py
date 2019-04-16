@@ -1,5 +1,5 @@
 import numpy as np
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 import copy as cp
 
 def ID3(d, n, data):
@@ -47,8 +47,6 @@ def ID3(d, n, data):
     return node
 
 def compute_gain(S, i):
-    #print('entropy' + str(compute_entropy(S)))
-    #print('entropy cond ' + str(compute_conditional_entropy(S, i)))
     return compute_entropy(S) - compute_conditional_entropy(S, i)
 
 def split_data(data, split):
@@ -59,24 +57,48 @@ def split_data(data, split):
     return split_data[1], split_data[0] #trainig_set, test_set
 
 def learning_curve(d, n, training_set, test_set, num_increments):
-    # you will probably need additional helper functions
-    training_set_parts = np.split(training_set, num_increments, axis=0)
-    training_error = 0.0
-    test_error = 0.0
+    #first, we split the training set into num_increments parts portions of different size
+    training_set_parts = []
+    working_set = cp.deepcopy(training_set)
+    part_length = 1
+    while len (training_set_parts) < num_increments:
+        training_set_parts.append(working_set[:part_length])
+        part_length +=1
+
+    #now for each portion of the training set, we calculate the test and training errors
+    training_errors = []
+    test_errors = []
+    training_set_parts_lengths = []
+
+    training_error_mean = 0.0
+    test_error_mean = 0.0
     for training_set_partial in training_set_parts:
         decision_tree = ID3(d, n, training_set_partial)
-        #print(decision_tree)
-        training_error += compute_error(decision_tree, training_set_partial, d)
-        training_error = training_error/len(training_set)
 
-        test_error += compute_error(decision_tree, test_set, d)
-        test_error = test_error/len(test_set)
+        training_error_partial = compute_error(decision_tree, training_set_partial, d)
+        training_error_mean += training_error_partial/len(training_set_parts)
+        training_errors.append(training_error_partial*100)
 
-    print("Training Error: " + str(training_error))
-    print("Test Error: " + str(test_error))
+        test_error_partial = compute_error(decision_tree, test_set, d)
+        test_error_mean += test_error_partial/len(training_set_parts)
+        test_errors.append(test_error_partial*100)
 
-    #return plot
-    pass
+        training_set_parts_lengths.append(len(training_set_partial))
+
+
+
+    print("Training Error: " + str(training_error_mean))
+    print("Test Error: " + str(test_error_mean))
+
+    plt.figure(figsize=(10, 10))
+    plt.plot(training_set_parts_lengths, training_errors, label = 'training')
+    plt.plot(training_set_parts_lengths, test_errors, label = 'test')
+    plt.title('Evaluation, #features = {}, recursion depth = {}'.format(len(d), n))
+    plt.xlabel('training set length (columns)')
+    plt.ylabel('error (% of mis-sclassifications)')
+    plt.legend(loc='upper right')
+
+    return plt
 
 
 #Helper funcs:
@@ -86,18 +108,21 @@ def compute_error(decision_tree, data_set, d):
         true = row[0]
         found = traverse_tree(decision_tree, row, d)
         if found != true : err+=1
-    return err
+    return err/len(data_set)
 
 
 def traverse_tree(decision_tree, evaluation_row, d):
     for col_ind, col in enumerate(evaluation_row):
         if col_ind > 0 and np.isin(col_ind, d):
             try:
-                decision_sub_tree = decision_tree[col_ind][col]
-                if type(decision_sub_tree) == type(""):
-                    return decision_sub_tree
-                else:
-                    return traverse_tree(decision_sub_tree, evaluation_row, np.delete(d, np.where(d==col_ind)))
+                if type(decision_tree) == type({}):
+                    decision_sub_tree = decision_tree[col_ind][col]
+                    return traverse_tree(decision_sub_tree, evaluation_row, np.delete(d, np.where(d == col_ind)))
+
+                if type(decision_tree) == type(""):
+                    return decision_tree
+
+                raise Exception("fatal error during traversal - decision tree broken")
             except KeyError:
                 continue
 
