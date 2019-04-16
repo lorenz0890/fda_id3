@@ -85,6 +85,6 @@ class IDTests(unittest.TestCase):
 
     def test_ID3(self):
         training_set, test_set = id3.split_data(prep.clean_data(prep.load_data('../data/house-votes-84.data')), 0.2)
-        decision_tree = id3.ID3(np.arange(9),6,training_set) # max num policies is 16
+        decision_tree = id3.ID3(np.arange(17),50,training_set) # max num policies is 16
         print(decision_tree)
 

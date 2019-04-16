@@ -7,11 +7,11 @@ def ID3(d, n, data):
     print('recursion depth: ' + str(n))
     #check termination criteria
     if (check_common_label(data) == 'republican'):
-       return "leaf republican"
+        return "leaf republican"
     if (check_common_label(data) == 'democrat'):
-       return "leaf democrat"
+        return "leaf democrat"
     if len(d) == 0 or n == 0:
-       return "leaf " + find_majority_label(data)
+        return "leaf " + find_majority_label(data)
 
     #find feature with biggest gain
     max_gain = -1 #initialized iwth -1 because real gain is always > 0
@@ -119,8 +119,7 @@ def compute_entropy(data):
 def compute_conditional_entropy(data, i):
     #i is column of feature, i must be greater than 0
     # source for formula: https://en.wikipedia.org/wiki/Conditional_entropy
-
-    data_nofeature = np.delete(data, i, axis = 0)
+    data_nofeature = np.delete(data, i, axis = 1)
 
     v= data[:,i]
     p = data[:,0]
