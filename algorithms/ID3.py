@@ -93,7 +93,7 @@ def learning_curve(d, n, training_set, test_set, num_increments):
     plt.plot(training_set_parts_lengths, test_errors, label = 'test')
     plt.title('Evaluation, #features = {}, recursion depth = {}'.format(len(d), n))
     plt.xlabel('training set length (columns)')
-    plt.ylabel('error (% of mis-sclassifications)')
+    plt.ylabel('error (% of mis-classifications)')
     plt.legend(loc='upper right')
 
     return plt
