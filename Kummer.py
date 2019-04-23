@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -252,14 +251,15 @@ if __name__ == '__main__':
         print('complete')
 
         #Run my own experiments regarding  good fit
-        print('running experiments for finding best learning curve. output: figures/good_fit_dn.png for d from 4 to 16 and n from 2 to 32, num_increments = 50. this may take a while...')
+        print('running experiments for finding best learning curve. output: fit_experiment_d_n.png for d from 4 to 16 and n from 2 to 32, num_increments = 50. '
+              '\nthis may take a while and generate a lot of files. interrupt with ctrl+c to stop.')
         for i in range (4,17):
             n = 2
 
             while n <= 32:
-                learning_curve(d=np.arange(1, i), n=n, training_set=training_set, test_set=test_set, num_increments=50).savefig('figures/good_fit_{}{}.png'.format(i,n))
+                learning_curve(d=np.arange(1, i), n=n, training_set=training_set, test_set=test_set, num_increments=50).savefig('fit_experiment_{}_{}.png'.format(i,n))
                 n+=2
-            print('complete for d = {}, n = {}'.format(i,n))
+                print('complete for d = {}, n = {}'.format(i,n))
         print('complete')
     except:
         print("fatal error. is house-votes-84.data in the same location as Kummer.py?")
