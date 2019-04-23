@@ -42,8 +42,8 @@ def ID3(d, n, data):
     #generate a node
     node = {}
     node [max_gain_feature] = {}
-    node[max_gain_feature]['n']=(ID3(d_new , n-1, data_no))
-    node[max_gain_feature]['y']=(ID3(d_new, n-1, data_yes))
+    node[max_gain_feature]['n']=(ID3(d_new , n-2, data_no))
+    node[max_gain_feature]['y']=(ID3(d_new, n-2, data_yes))
     return node
 
 def compute_gain(S, i):
@@ -61,9 +61,9 @@ def learning_curve(d, n, training_set, test_set, num_increments):
     training_set_parts = []
     working_set = cp.deepcopy(training_set)
     part_length = 1
-    while len (training_set_parts) < num_increments:
+    while len (training_set_parts) < num_increments and part_length<len(working_set):
         training_set_parts.append(working_set[:part_length])
-        part_length +=1
+        part_length +=int(len(training_set)/num_increments+1)
 
     #now for each portion of the training set, we calculate the test and training errors
     training_errors = []
@@ -92,7 +92,7 @@ def learning_curve(d, n, training_set, test_set, num_increments):
     plt.plot(training_set_parts_lengths, training_errors, label = 'training')
     plt.plot(training_set_parts_lengths, test_errors, label = 'test')
     plt.title('Evaluation, #features = {}, recursion depth = {}'.format(len(d), n))
-    plt.xlabel('training set length (columns)')
+    plt.xlabel('training set length (rows)')
     plt.ylabel('error (% of mis-classifications)')
     plt.legend(loc='upper right')
 
@@ -169,7 +169,7 @@ def compute_per_col_yes_probability(data):
 def compute_entropy(data):
     probs_yes = compute_per_col_yes_probability(data)
     for ind_prob_yes, prob_yes in enumerate(probs_yes):
-        probs_yes[ind_prob_yes] = prob_yes*np.log(prob_yes)
+        probs_yes[ind_prob_yes] = prob_yes*np.log2(prob_yes)
     return (-1)*np.sum(probs_yes)
 
 def compute_conditional_entropy(data, i):
@@ -191,5 +191,5 @@ def compute_conditional_entropy(data, i):
     for ind_nofeat, prob_yes_nofeat in enumerate(probs_yes_data_nofeature):
         for ind_feat, prob_yes_feat in enumerate(probs_yes_feature):
             prob_conditional = prob_yes_nofeat * prob_yes_feat
-            vals.append(prob_conditional* np.log(prob_conditional/prob_yes_feat))
+            vals.append(prob_conditional* np.log2(prob_conditional/prob_yes_feat))
     return -1*np.sum(vals)
