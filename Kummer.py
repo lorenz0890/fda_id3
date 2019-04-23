@@ -12,7 +12,7 @@ def ID3(d, n, data):
         return "republican"
     if (check_common_label(data) == 'democrat'):
         return "democrat"
-    if len(d) == 0 or n == 0:
+    if len(d) == 0 or n <= 0:
         return find_majority_label(data)
 
     #find feature with biggest gain
