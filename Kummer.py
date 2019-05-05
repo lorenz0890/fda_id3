@@ -4,21 +4,24 @@ import os
 import random
 import copy as cp
 
+max_num_nodes_n = 0# just for initializing
 
-def ID3(d, n, data):
+def ID3(feature_set_indices, d, data):
     #print('recursion depth: ' + str(n))
     #check termination criteria
+    global max_num_nodes_n
+    max_num_nodes_n -= 1
     if (check_common_label(data) == 'republican'):
         return "republican"
     if (check_common_label(data) == 'democrat'):
         return "democrat"
-    if len(d) == 0 or n <= 0:
+    if len(feature_set_indices) == 0 or max_num_nodes_n <= 0 or d <=0:
         return find_majority_label(data)
 
     #find feature with biggest gain
     max_gain = -1 #initialized iwth -1 because real gain is always > 0
     max_gain_feature = None
-    for i in d:
+    for i in feature_set_indices:
         gain = compute_gain(data, i)
         if max_gain < gain:
             max_gain = gain
@@ -40,13 +43,14 @@ def ID3(d, n, data):
     data_yes = np.delete(data_yes, remove_no, axis=0)
 
     #remove the max gain feature from the featzure set
-    d_new = np.delete(d, np.where(d==max_gain_feature))
+    feature_set_indices_new = np.delete(feature_set_indices, np.where(feature_set_indices == max_gain_feature))
 
     #generate a node
     node = {}
     node [max_gain_feature] = {}
-    node[max_gain_feature]['n']=(ID3(d_new , n-2, data_no))
-    node[max_gain_feature]['y']=(ID3(d_new, n-2, data_yes))
+
+    node[max_gain_feature]['n']=(ID3(feature_set_indices_new, d - 1, data_no))
+    node[max_gain_feature]['y']=(ID3(feature_set_indices_new, d - 1, data_yes))
     return node
 
 def compute_gain(S, i):
@@ -60,7 +64,11 @@ def split_data(data, split):
     return split_data[1], split_data[0] #trainig_set, test_set
 
 def learning_curve(d, n, training_set, test_set, num_increments):
+
     #first, we split the training set into num_increments parts portions of different size
+    global max_num_nodes_n
+    max_num_nodes_n = n
+
     training_set_parts = []
     working_set = cp.deepcopy(training_set)
     part_length = 1
@@ -76,25 +84,26 @@ def learning_curve(d, n, training_set, test_set, num_increments):
     training_error_mean = 0.0
     test_error_mean = 0.0
     for training_set_partial in training_set_parts:
-        decision_tree = ID3(d, n, training_set_partial)
+        # make n_refs
+        feature_subset_indices = np.arange(1, 17)
+        max_num_nodes_n = n
+        decision_tree = ID3(feature_subset_indices, d, training_set_partial)
 
-        training_error_partial = compute_error(decision_tree, training_set_partial, d)
+        training_error_partial = compute_error(decision_tree, training_set_partial, feature_subset_indices)
         training_error_mean += training_error_partial/len(training_set_parts)
         training_errors.append(training_error_partial*100)
 
-        test_error_partial = compute_error(decision_tree, test_set, d)
+        test_error_partial = compute_error(decision_tree, test_set, feature_subset_indices)
         test_error_mean += test_error_partial/len(training_set_parts)
         test_errors.append(test_error_partial*100)
 
         training_set_parts_lengths.append(len(training_set_partial))
 
-    #print("Training Error: " + str(training_error_mean))
-    #print("Test Error: " + str(test_error_mean))
 
     plt.figure(figsize=(10, 10))
     plt.plot(training_set_parts_lengths, training_errors, label = 'training')
     plt.plot(training_set_parts_lengths, test_errors, label = 'test')
-    plt.title('Evaluation, #features = {}, recursion depth = {}'.format(len(d), n))
+    plt.title('Evaluation, #features = {}, max number of nodes = {}'.format(d, n))
     plt.xlabel('training set length (rows)')
     plt.ylabel('error (% of mis-classifications)')
     plt.legend(loc='upper right')
@@ -148,56 +157,90 @@ def check_common_label(data):
     return 'heterogenous'
 
 
-
-def compute_per_col_yes_probability(data):
-    # calculates the per column probabilities that a varaible, i.e. the column will have a certain value (y,n).
-    # can be used on a per-dataset basisis, i.e. we can calc different per col probabilities for training and validation set
-    prob_yes = []
-    data_t = data.transpose()
-    for ind_row, _ in enumerate(data_t):
-        prob_yes.append(0)
-        for ind_col, _ in enumerate(data_t[ind_row]):
-            if data_t[ind_row][ind_col] == 'y':
-                    prob_yes[ind_row] += 1.0
-        new_elem = prob_yes[ind_row] / float(len(data_t[ind_row]))
-        if new_elem > 0.:
-            prob_yes[ind_row] = new_elem
-        else:
-            prob_yes[ind_row] = 0.001
-
-    prob_yes = np.array(prob_yes)
-    prob_yes = prob_yes[1:]
-    return np.array(prob_yes)
-
 def compute_entropy(data):
-    probs_yes = compute_per_col_yes_probability(data)
-    for ind_prob_yes, prob_yes in enumerate(probs_yes):
-        probs_yes[ind_prob_yes] = prob_yes*np.log2(prob_yes)
-    return (-1)*np.sum(probs_yes)
+    data_t = data.transpose()
+    num_democrats = 0
+    num_republicans = 0
+    for ind_col, _ in enumerate(data_t[0]):
+        if data_t[0][ind_col] == 'democrat':
+            num_democrats+=1
+            continue
+        if data_t[0][ind_col] == 'republican':
+            num_republicans += 1
+            continue
+
+    probability_democrat = 0
+    probability_republican = 0
+    if len(data_t[0]) > 0:
+        probability_democrat = num_democrats/len(data_t[0])
+        probability_republican = num_republicans/len(data_t[0])
+
+    return -(probability_democrat*np.log2(probability_democrat) + probability_republican*np.log2(probability_republican))
+
 
 def compute_conditional_entropy(data, i):
-    #i is column of feature, i must be greater than 0
+    # i is column of feature, i must be greater than 0
     # source for formula: https://en.wikipedia.org/wiki/Conditional_entropy
-    data_nofeature = np.delete(data, i, axis = 1)
 
     v= data[:,i]
     p = data[:,0]
     feature = []
     for i in range(0, len(v)):
-        feature.append([p[i], v[i]])
+       feature.append([p[i], v[i]])
     feature = np.array(feature)
 
-    probs_yes_data_nofeature = compute_per_col_yes_probability(data_nofeature)
-    probs_yes_feature = compute_per_col_yes_probability(feature)
+    num_yes = 0
+    num_no = 0
+    num_republican = 0
+    num_democrat = 0
+    num_republican_yes = 0
+    num_republican_no = 0
+    num_democrat_yes = 0
+    num_democrat_no = 0
+    for ind_row, _ in enumerate(feature):
+        if feature[ind_row][0] == 'democrat':
+            num_democrat +=1
+            if feature[ind_row][1] == 'y':
+                num_democrat_yes +=1
+                num_yes += 1
+            else:
+                num_democrat_no = +1
+                num_no += 1
+        if feature[ind_row][0] == 'republican':
+            num_republican += 1
+            if feature[ind_row][1] == 'y':
+                num_republican_yes += 1
+                num_yes += 1
+            else:
+                num_republican_no += 1
+                num_no += 1
 
-    vals = []
-    for ind_nofeat, prob_yes_nofeat in enumerate(probs_yes_data_nofeature):
-        for ind_feat, prob_yes_feat in enumerate(probs_yes_feature):
-            prob_conditional = prob_yes_nofeat * prob_yes_feat
-            vals.append(prob_conditional* np.log2(prob_conditional/prob_yes_feat))
-    return -1*np.sum(vals)
+    entropy = 1.0
+    if num_republican > 0 and num_democrat > 0 and len(feature) > 0:
+        probability_yes = num_yes/len(feature)
+        probability_no = num_no/len(feature)
 
+        probability_republican_condition_yes = num_republican_yes/num_republican
+        probability_republican_condition_no = num_republican_yes/num_republican
 
+        probability_democrat_condition_yes = num_democrat_yes/num_democrat
+        probability_democrat_condition_no = num_democrat_no/num_democrat
+
+        probability_democrat_joint_yes = probability_democrat_condition_yes*probability_yes
+        probability_republican_joint_yes = probability_republican_condition_yes*probability_yes
+
+        probability_democrat_joint_no = probability_democrat_condition_no*probability_no
+        probability_republican_joint_no = probability_republican_condition_no*probability_no
+
+        if probability_republican_joint_yes > 0 \
+                and probability_democrat_joint_yes > 0 \
+                and probability_republican_joint_no > 0 \
+                and probability_democrat_joint_no > 0:
+            entropy = probability_democrat_joint_yes*np.log2(probability_yes/probability_democrat_joint_yes) \
+                      + probability_republican_joint_yes*np.log2(probability_yes/probability_republican_joint_yes) \
+                      + probability_republican_joint_no * np.log2(probability_no / probability_republican_joint_no) \
+                      + probability_democrat_joint_no * np.log2(probability_no / probability_democrat_joint_no)
+    return entropy
 
 
 def load_data(filename):
@@ -207,6 +250,7 @@ def load_data(filename):
     if ftype == '.data':
         raw_data = np.genfromtxt((filename+ftype), delimiter=',', dtype=str
                                       )
+        print(type(raw_data))
     return raw_data
 
 
@@ -235,32 +279,34 @@ if __name__ == '__main__':
 
         #Run the learning curve script with teh required inputs from the assignment, output the plots
         print('calculate learning curve for input: d  = 7, n = 40, num_increments = 50 with output: fig1.png')
-        learning_curve(d=np.arange(1,8),n = 40, training_set=training_set, test_set=test_set, num_increments=50).savefig('fig1.png')
+        learning_curve(d=7,n = 40, training_set=training_set, test_set=test_set, num_increments=100).savefig('fig1.png')
 
         print('complete\ncalculate learning curve for input: d  = 4, n = 40, num_increments = 50 with output: fig2.png')
-        learning_curve(d=np.arange(1,5),n = 40, training_set=training_set, test_set=test_set, num_increments=50).savefig('fig2.png')
+        learning_curve(d=4,n = 40, training_set=training_set, test_set=test_set, num_increments=100).savefig('fig2.png')
 
         print('complete\ncalculate learning curve for input: d  = 16, n = 40, num_increments = 50 with output: fig3.png')
-        learning_curve(d=np.arange(1,17), n=40, training_set=training_set, test_set=test_set, num_increments=50).savefig('fig3.png')
+        learning_curve(d=16, n=40, training_set=training_set, test_set=test_set, num_increments=100).savefig('fig3.png')
 
         print('complete\ncalculate learning curve for input: d  = 7, n = 20, num_increments = 50 with output: fig4.png')
-        learning_curve(d=np.arange(1,8), n=20, training_set=training_set, test_set=test_set, num_increments=50).savefig('fig4.png')
+        learning_curve(d=7, n=20, training_set=training_set, test_set=test_set, num_increments=100).savefig('fig4.png')
 
         print('complete\ncalculate learning curve for input: d  = 7, n = 130, num_increments = 50 with output: fig5.png')
-        learning_curve(d=np.arange(1, 8), n=130, training_set=training_set, test_set=test_set, num_increments=50).savefig('fig5.png')
+        learning_curve(d=7, n=130, training_set=training_set, test_set=test_set, num_increments=100).savefig('fig5.png')
         print('complete')
 
         #Run my own experiments regarding  good fit
+
         print('running experiments for finding best learning curve. output: fit_experiment_d_n.png for d from 4 to 16 and n from 2 to 32, num_increments = 50. '
               '\nthis may take a while and generate a lot of files. interrupt with ctrl+c to stop.')
-        for i in range (4,17):
-            n = 2
+        for i in range (1,17):
+            n = 1
 
-            while n <= 32:
-                learning_curve(d=np.arange(1, i), n=n, training_set=training_set, test_set=test_set, num_increments=50).savefig('fit_experiment_{}_{}.png'.format(i,n))
+            while n <= 60:
+                learning_curve(d=i, n=n, training_set=training_set, test_set=test_set, num_increments=100).savefig('fit_experiment_{}_{}.png'.format(i,n))
                 n+=2
                 print('complete for d = {}, n = {}'.format(i,n))
         print('complete')
+
     except:
         print("fatal error. is house-votes-84.data in the same location as Kummer.py?")
     exit()
